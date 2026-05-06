@@ -3,6 +3,8 @@
 <head>
   <title>ML Dashboard</title>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
     body{
       font-family: Arial;
@@ -14,7 +16,7 @@
       background:white;
       padding:30px;
       border-radius:10px;
-      width:400px;
+      width:450px;
       margin:auto;
       box-shadow:0 0 10px rgba(0,0,0,0.1);
     }
@@ -26,10 +28,20 @@
       margin-bottom:20px;
     }
 
+    button{
+      cursor:pointer;
+      font-weight:bold;
+    }
+
     #result{
       background:#eee;
       padding:15px;
       border-radius:5px;
+      margin-bottom:20px;
+    }
+
+    canvas{
+      margin-top:20px;
     }
   </style>
 </head>
@@ -64,9 +76,13 @@ Run Model
 Results will appear here
 </div>
 
+<canvas id="metricsChart"></canvas>
+
 </div>
 
 <script>
+
+let chart = null;
 
 async function runModel(){
 
@@ -75,6 +91,9 @@ async function runModel(){
 
     const dataset =
       document.getElementById("dataset").value;
+
+    document.getElementById("result").innerHTML =
+      "Running model... please wait";
 
     const response = await fetch(
       "https://badarmaqsood786-ml-model-backend.hf.space/run",
@@ -94,12 +113,57 @@ async function runModel(){
 
     const data = await response.json();
 
+    if(data.error){
+      document.getElementById("result").innerHTML =
+        `<p><b>Error:</b> ${data.error}</p>`;
+      return;
+    }
+
     document.getElementById("result").innerHTML = `
       <h3>Results</h3>
       <p><b>Model:</b> ${data.model}</p>
       <p><b>Dataset:</b> ${data.dataset}</p>
-      <p><b>Accuracy:</b> ${data.accuracy}</p>
+      <p><b>Accuracy:</b> ${data.accuracy}%</p>
+      <p><b>Precision:</b> ${data.precision}%</p>
+      <p><b>Recall:</b> ${data.recall}%</p>
+      <p><b>F1 Score:</b> ${data.f1_score}%</p>
     `;
+
+    if(chart){
+      chart.destroy();
+    }
+
+    chart = new Chart(document.getElementById("metricsChart"), {
+      type: "bar",
+
+      data: {
+        labels: [
+          "Accuracy",
+          "Precision",
+          "Recall",
+          "F1 Score"
+        ],
+
+        datasets: [{
+          label: "Performance Metrics",
+          data: [
+            data.accuracy,
+            data.precision,
+            data.recall,
+            data.f1_score
+          ]
+        }]
+      },
+
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100
+          }
+        }
+      }
+    });
 }
 
 </script>
